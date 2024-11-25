@@ -1,3 +1,3 @@
 # cgt-calculator-project
 
-// a basic CGT calculator
+a basic CGT calculator
