@@ -1,106 +1,105 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CGT Calculator</title>
     <script>// Array to store purchases (in FIFO order)
-let purchaseHistory = [];
+        let purchaseHistory = [];
 
-// Function to calculate CGT
-function calculateCGT() {
-    // Get the inputs from the form
-    const shares = parseInt(document.getElementById('shares').value);
-    const company = document.getElementById('company').value;
-    const costPrice = parseFloat(document.getElementById('cost').value); // Cost price per share
-    const purchaseDate = new Date(document.getElementById('purchaseDate').value); // Date when shares were purchased
-    const totalSaleAmount = parseFloat(document.getElementById('totalSaleAmount').value); // Total sale amount
-    const saleDate = new Date(document.getElementById('saleDate').value); // Date when shares were sold
-    const method = document.querySelector('input[name="method"]:checked').value; // FIFO, LIFO, or Lowest Cost
-    const taxRate = parseFloat(document.getElementById('taxRate').value) / 100 || 0; // Tax rate in percentage
+        function calculateCGT() {
+            // Get the inputs from the form
+            const shares = parseInt(document.getElementById('shares').value);
+            const company = document.getElementById('company').value;
+            const costPrice = parseFloat(document.getElementById('cost').value); // Cost price per share
+            const purchaseDate = new Date(document.getElementById('purchaseDate').value); // Date when shares were purchased
+            const totalSaleAmount = parseFloat(document.getElementById('totalSaleAmount').value); // Total sale amount
+            const saleDate = new Date(document.getElementById('saleDate').value); // Date when shares were sold
+            const method = document.querySelector('input[name="method"]:checked').value; // FIFO, LIFO, or Lowest Cost
+            const taxRate = parseFloat(document.getElementById('taxRate').value) / 100 || 0; // Tax rate in percentage
 
-    // Validate input
-    if (isNaN(shares) || isNaN(costPrice) || isNaN(totalSaleAmount) || !purchaseDate || !saleDate) {
-        alert("Please enter valid values.");
-        return;
-    }
+            // Validate input
+            if (isNaN(shares) || isNaN(costPrice) || isNaN(totalSaleAmount) || !purchaseDate || !saleDate) {
+                alert("Please enter valid values.");
+                return;
+            }
 
-    // Record the purchase (this is for adding a purchase, not a sale)
-    purchaseHistory.push({
-        shares: shares,
-        company: company,
-        costPrice: costPrice,
-        purchaseDate: purchaseDate,
-        totalAmount: costPrice * shares // Total purchase amount
-    });
+            // Record the purchase (this is for adding a purchase, not a sale)
+            purchaseHistory.push({
+                shares: shares,
+                company: company,
+                costPrice: costPrice,
+                purchaseDate: purchaseDate,
+                totalAmount: costPrice * shares // Total purchase amount
+            });
 
-    // Calculate the capital gain or loss using the selected method
-    let capitalGainOrLoss = calculateCapitalGain(shares, totalSaleAmount, method);
+            // Calculate the capital gain or loss using the selected method
+            let capitalGainOrLoss = calculateCapitalGain(shares, totalSaleAmount, method);
 
-    // Calculate the tax based on the capital gain
-    let taxOwed = capitalGainOrLoss > 0 ? capitalGainOrLoss * taxRate : 0;
+            // Calculate the tax based on the capital gain
+            let taxOwed = capitalGainOrLoss > 0 ? capitalGainOrLoss * taxRate : 0;
 
-    // Prepare the result message
-    let resultMessage = `<h3>Calculation Result</h3>`;
-    resultMessage += `<p>You bought <strong>${shares}</strong> shares of <strong>${company}</strong> at $${costPrice.toFixed(2)} each.</p>`;
-    resultMessage += `<p>You sold them for a total of $${totalSaleAmount.toFixed(2)}.</p>`;
-    resultMessage += `<p><strong>Capital Gain/Loss:</strong> $${capitalGainOrLoss.toFixed(2)}</p>`;
-    resultMessage += `<p><strong>Tax Owed:</strong> $${taxOwed.toFixed(2)}</p>`;
+            // Prepare the result message
+            let resultMessage = `<h3>Calculation Result</h3>`;
+            resultMessage += `<p>You bought <strong>${shares}</strong> shares of <strong>${company}</strong> at $${costPrice.toFixed(2)} each.</p>`;
+            resultMessage += `<p>You sold them for a total of $${totalSaleAmount.toFixed(2)}.</p>`;
+            resultMessage += `<p><strong>Capital Gain/Loss:</strong> $${capitalGainOrLoss.toFixed(2)}</p>`;
+            resultMessage += `<p><strong>Tax Owed:</strong> $${taxOwed.toFixed(2)}</p>`;
 
-    // Display the result on the page
-    document.getElementById('result').innerHTML = resultMessage;
+            // Display the result on the page
+            document.getElementById('result').innerHTML = resultMessage;
 
-    // Show the list of transactions (purchases and sales)
-    displayTransactions();
-}
-
-// Function to calculate capital gain based on selected method (FIFO, LIFO, or Lowest Cost)
-function calculateCapitalGain(shares, totalSaleAmount, method) {
-    let capitalGainOrLoss = 0;
-    let remainingShares = shares;
-    let saleAmount = 0;
-
-    // Make a copy of purchaseHistory for sale calculation
-    let purchases = [...purchaseHistory];
-
-    // Sort purchases based on method
-    if (method === 'FIFO') {
-        purchases.sort((a, b) => a.purchaseDate - b.purchaseDate); // Sort by oldest first (FIFO)
-    } else if (method === 'LIFO') {
-        purchases.sort((a, b) => b.purchaseDate - a.purchaseDate); // Sort by newest first (LIFO)
-    } else if (method === 'LowestCost') {
-        purchases.sort((a, b) => a.costPrice - b.costPrice); // Sort by cheapest purchase first (Lowest Cost)
-    }
-
-    // Iterate over the purchases and calculate the capital gain/loss
-    for (let i = 0; i < purchases.length && remainingShares > 0; i++) {
-        const purchase = purchases[i];
-
-        // If there are more shares to sell than the purchase batch
-        if (remainingShares >= purchase.shares) {
-            saleAmount += purchase.shares * purchase.costPrice; // Add full batch to sale amount
-            capitalGainOrLoss += (purchase.shares * purchase.costPrice) - (purchase.shares * (totalSaleAmount / shares)); // Calculate gain/loss for full batch
-            remainingShares -= purchase.shares;
-        } else {
-            // If there are fewer shares to sell than the purchase batch
-            saleAmount += remainingShares * purchase.costPrice;
-            capitalGainOrLoss += (remainingShares * purchase.costPrice) - (remainingShares * (totalSaleAmount / shares));
-            purchase.shares -= remainingShares;
-            remainingShares = 0;
+            // Show the list of transactions (purchases and sales)
+            displayTransactions();
         }
-    }
 
-    return capitalGainOrLoss;
-}
+        // Function to calculate capital gain based on selected method (FIFO, LIFO, or Lowest Cost)
+        function calculateCapitalGain(shares, totalSaleAmount, method) {
+            let capitalGainOrLoss = 0;
+            let remainingShares = shares;
 
-// Function to display the list of transactions
-function displayTransactions() {
-    let transactionList = '<h3>Transactions List</h3>';
-    transactionList += `<table border="1" cellpadding="5"><tr><th>Company</th><th>Shares</th><th>Cost Price</th><th>Purchase Date</th><th>Total Amount</th></tr>`;
+            // Make a copy of purchaseHistory for sale calculation
+            let purchases = [...purchaseHistory];
 
-    // Loop through purchaseHistory and display it
-    purchaseHistory.forEach(purchase => {
-        transactionList += `
+            // Sort purchases based on method
+            if (method === 'FIFO') {
+                purchases.sort((a, b) => a.purchaseDate - b.purchaseDate); // Sort by oldest first (FIFO)
+            } else if (method === 'LIFO') {
+                purchases.sort((a, b) => b.purchaseDate - a.purchaseDate); // Sort by newest first (LIFO)
+            } else if (method === 'LowestCost') {
+                purchases.sort((a, b) => a.costPrice - b.costPrice); // Sort by cheapest purchase first (Lowest Cost)
+            }
+
+            // Sale price per share is totalSaleAmount divided by the number of shares
+            const salePricePerShare = totalSaleAmount / shares;
+
+            // Iterate over the purchases and calculate the capital gain/loss
+            for (let i = 0; i < purchases.length && remainingShares > 0; i++) {
+                const purchase = purchases[i];
+
+                // If there are more shares to sell than the purchase batch
+                if (remainingShares >= purchase.shares) {
+                    capitalGainOrLoss += (purchase.shares * salePricePerShare) - (purchase.shares * purchase.costPrice); // Calculate gain/loss for full batch
+                    remainingShares -= purchase.shares;
+                } else {
+                    // If there are fewer shares to sell than the purchase batch
+                    capitalGainOrLoss += (remainingShares * salePricePerShare) - (remainingShares * purchase.costPrice);
+                    purchase.shares -= remainingShares;
+                    remainingShares = 0;
+                }
+            }
+
+            return capitalGainOrLoss;
+        }
+
+        // Function to display the list of transactions
+        function displayTransactions() {
+            let transactionList = '<h3>Transactions List</h3>';
+            transactionList += `<table border="1" cellpadding="5"><tr><th>Company</th><th>Shares</th><th>Cost Price</th><th>Purchase Date</th><th>Total Amount</th></tr>`;
+
+            // Loop through purchaseHistory and display it
+            purchaseHistory.forEach(purchase => {
+                transactionList += `
             <tr>
                 <td>${purchase.company}</td>
                 <td>${purchase.shares}</td>
@@ -109,11 +108,11 @@ function displayTransactions() {
                 <td>$${purchase.totalAmount.toFixed(2)}</td>
             </tr>
         `;
-    });
+            });
 
-    transactionList += `</table>`;
-    document.getElementById('transactions').innerHTML = transactionList;
-}</script>
+            transactionList += `</table>`;
+            document.getElementById('transactions').innerHTML = transactionList;
+        }</script>
     <style>
         body {
             font-family: Arial, sans-serif;
